@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RelatoriosRouteImport } from './routes/relatorios'
+import { Route as SimulacaoIndexRouteImport } from './routes/simulacao.index'
+import { Route as SimulacaoIdRouteImport } from './routes/simulacao.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RelatoriosRoute = RelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimulacaoIndexRoute = SimulacaoIndexRouteImport.update({
+  id: '/simulacao/',
+  path: '/simulacao/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimulacaoIdRoute = SimulacaoIdRouteImport.update({
+  id: '/simulacao/$id',
+  path: '/simulacao/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/simulacao/$id': typeof SimulacaoIdRoute
+  '/simulacao/': typeof SimulacaoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/simulacao/$id': typeof SimulacaoIdRoute
+  '/simulacao': typeof SimulacaoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/relatorios': typeof RelatoriosRoute
+  '/simulacao/$id': typeof SimulacaoIdRoute
+  '/simulacao/': typeof SimulacaoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/relatorios' | '/simulacao/$id' | '/simulacao/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/relatorios' | '/simulacao/$id' | '/simulacao'
+  id: '__root__' | '/' | '/relatorios' | '/simulacao/$id' | '/simulacao/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RelatoriosRoute: typeof RelatoriosRoute
+  SimulacaoIdRoute: typeof SimulacaoIdRoute
+  SimulacaoIndexRoute: typeof SimulacaoIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/relatorios': {
+      id: '/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof RelatoriosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simulacao/': {
+      id: '/simulacao/'
+      path: '/simulacao'
+      fullPath: '/simulacao/'
+      preLoaderRoute: typeof SimulacaoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simulacao/$id': {
+      id: '/simulacao/$id'
+      path: '/simulacao/$id'
+      fullPath: '/simulacao/$id'
+      preLoaderRoute: typeof SimulacaoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RelatoriosRoute: RelatoriosRoute,
+  SimulacaoIdRoute: SimulacaoIdRoute,
+  SimulacaoIndexRoute: SimulacaoIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
