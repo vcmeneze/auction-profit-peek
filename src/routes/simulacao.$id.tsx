@@ -126,7 +126,7 @@ function Simulacao() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                   <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
                   <YAxis tickFormatter={(v) => `${Math.round(v / 1000)}k`} tick={{ fontSize: 12, fill: "var(--muted-foreground)" }} />
-                  <Tooltip formatter={(v: number) => brl(v)} cursor={{ fill: "var(--muted)" }} />
+                  <Tooltip formatter={(v) => brl(Number(v))} cursor={{ fill: "var(--muted)" }} />
                   <Bar dataKey="valor" radius={[6, 6, 0, 0]} isAnimationActive>
                     <Cell fill={r.custoTotal > r.mercado ? "var(--danger)" : "var(--primary)"} />
                     <Cell fill="var(--gold)" />
