@@ -1,0 +1,33 @@
+name: Atualizador Diário de Leilões (SAD)
+
+on:
+  schedule:
+    # Roda todos os dias às 03:00 da manhã (Horário de Brasília) / 06:00 UTC
+    - cron: '0 6 * * *'
+  # Este gatilho permite que você aperte um botão no GitHub para rodar na hora (ótimo para a banca!)
+  workflow_dispatch: 
+
+jobs:
+  atualizar-banco:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Baixar o código do repositório
+      uses: actions/checkout@v4
+
+    - name: Configurar o ambiente Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Instalar as bibliotecas necessárias
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas supabase requests python-dotenv urllib3
+
+    - name: Executar o Motor de Extração (Scraper)
+      env:
+        # Puxa as variáveis secretas cadastradas no GitHub
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      run: python coletor_caixa.py

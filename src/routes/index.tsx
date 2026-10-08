@@ -19,8 +19,6 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Radar de Oportunidades — LeilãoSeguro" },
       { name: "description", content: "Encontre imóveis de leilão da Caixa com classificação de risco automática." },
-      { property: "og:title", content: "Radar de Oportunidades — LeilãoSeguro" },
-      { property: "og:description", content: "Encontre imóveis de leilão da Caixa com classificação de risco automática." },
     ],
   }),
   component: Dashboard,
@@ -101,7 +99,15 @@ function Dashboard() {
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {isLoading && Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-80 rounded-xl" />)}
         {filtered.map((im) => {
-          const r = simulate(defaultScenario(im.preco_minimo, im.status_ocupacao));
+          // CORREÇÃO: Passando o 'preco' para o simulate junto com o cenário padrão
+          const cenario = defaultScenario(im.preco_minimo, im.status_ocupacao);
+          const r = simulate({ 
+            preco: im.preco_minimo, 
+            meses: cenario.meses, 
+            reforma: cenario.reforma, 
+            honorarios: cenario.honorarios 
+          });
+          
           return (
             <button
               key={im.id_imovel}

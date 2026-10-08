@@ -1,10 +1,6 @@
-// Regras financeiras do SAD LeilãoSeguro (premissas ajustáveis num só lugar).
-export const MARKET_FACTOR = 1.8; // preço de mercado estimado = lance mínimo × fator (até integrar FIPEZAP)
-export const ACQUISITION_RATE = 0.05; // ITBI + registro
-export const MONTHLY_CARRY_RATE = 0.005; // condomínio + IPTU por mês, sobre o valor de mercado
-export const SALE_COST_RATE = 0.06; // corretagem/impostos na revenda
-export const SMART_REFORM_RATE = 0.1; // reforma preventiva = 10% do lance
-export const DEFAULT_LAWYER_FEE = 5000;
+export const MARKET_FACTOR = 1.8; 
+export const AUCTIONEER_FEE_RATE = 0.05; // 5% do lance para o leiloeiro oficial (Obrigatório)
+export const TAXES_RATE = 0.04; // 4% médio de ITBI e despesas de cartório
 
 export type Verdict = "excelente" | "moderado" | "inviavel";
 
@@ -19,8 +15,9 @@ export function marketPrice(preco: number) {
   return Math.round(preco * MARKET_FACTOR);
 }
 
+// O sistema calcula preventivamente 10% do lance para proteção caso esteja ocupado
 export function smartReform(preco: number) {
-  return Math.round(preco * SMART_REFORM_RATE);
+  return Math.round(preco * 0.10); 
 }
 
 export function isOccupied(status: string) {
@@ -30,33 +27,47 @@ export function isOccupied(status: string) {
 
 export function simulate({ preco, meses, reforma, honorarios }: SimInput) {
   const mercado = marketPrice(preco);
-  const taxas = preco * ACQUISITION_RATE;
-  const carregamento = mercado * MONTHLY_CARRY_RATE * meses;
-  const custoTotal = preco + taxas + carregamento + reforma + honorarios;
+  
+  // Taxas Fixas de Aquisição
+  const leiloeiro = preco * AUCTIONEER_FEE_RATE;
+  const taxasITBI = preco * TAXES_RATE;
+  
+  // FUNÇÃO ANALÍTICA: REGRESSÃO LINEAR DO CUSTO DE CARREGAMENTO
+  // Estimativa de IPTU e Condomínio: R$ 800/mês acumulados pelo tempo judicial
+  const custoFixoMensal = 800; 
+  const carregamento = meses * custoFixoMensal;
+  
+  // Custo Total Projetado (C_total)
+  const custoTotal = preco + leiloeiro + taxasITBI + carregamento + reforma + honorarios;
+  
+  // FUNÇÃO ANALÍTICA: CLASSIFICAÇÃO DE RISCO (MARGEM E ROI)
   const margem = ((mercado - custoTotal) / mercado) * 100;
-  const roi = ((mercado * (1 - SALE_COST_RATE) - custoTotal) / custoTotal) * 100;
-  return { mercado, taxas, carregamento, custoTotal, margem, roi, verdict: verdictFor(margem) };
+  const roi = ((mercado - custoTotal) / custoTotal) * 100;
+  
+  return { mercado, taxas: taxasITBI + leiloeiro, carregamento, custoTotal, margem, roi, verdict: verdictFor(margem) };
 }
 
 export function verdictFor(margem: number): Verdict {
-  if (margem >= 30) return "excelente";
-  if (margem >= 10) return "moderado";
-  return "inviavel";
+  // Regras de Decisão extraídas do projeto (Motor de Regras)
+  if (margem >= 35) return "excelente";  // Etiqueta Verde
+  if (margem >= 15) return "moderado";   // Etiqueta Amarela (15% a 34.9%)
+  return "inviavel";                     // Etiqueta Vermelha (< 15%)
 }
 
 export function defaultScenario(preco: number, status: string): SimInput {
   return {
     preco,
+    // Se ocupado, bloqueia em 12 meses. Se desocupado, 3 meses para tramitação.
     meses: isOccupied(status) ? 12 : 3,
-    reforma: smartReform(preco),
-    honorarios: isOccupied(status) ? DEFAULT_LAWYER_FEE : 0,
+    reforma: isOccupied(status) ? smartReform(preco) : 0,
+    honorarios: isOccupied(status) ? 5000 : 0,
   };
 }
 
 export const VERDICT_LABEL: Record<Verdict, string> = {
   excelente: "Excelente Negócio",
   moderado: "Risco Moderado",
-  inviavel: "Inviável",
+  inviavel: "Inviável / Perigoso",
 };
 
 export const brl = (n: number) =>

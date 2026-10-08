@@ -31,10 +31,6 @@ export const isDemo = !supabase;
 const DEMO: Imovel[] = [
   ["1444400001", "Rua das Acácias, 120, Apto 302 - Pituba", 185000, "Desocupado", "Salvador", "BA"],
   ["1444400002", "Av. Sete de Setembro, 980 - Centro", 142000, "Ocupado", "Salvador", "BA"],
-  ["1444400003", "Rua Pernambuco, 45 - Savassi", 310000, "Desocupado", "Belo Horizonte", "MG"],
-  ["1444400004", "Rua Augusta, 1500, Apto 81 - Consolação", 420000, "Ocupado", "São Paulo", "SP"],
-  ["1444400005", "Rua do Sol, 77 - Boa Viagem", 98000, "Desocupado", "Recife", "PE"],
-  ["1444400006", "Travessa Ipê, 12 - Jardim América", 260000, "Ocupado", "Goiânia", "GO"],
 ].map(([id, end, preco, st, cid, uf]) => ({
   id_imovel: id as string,
   numero_edital: "0012/2026",
@@ -50,7 +46,8 @@ const DEMO_SIMS_KEY = "leilaoseguro_demo_sims";
 
 export async function listImoveis(): Promise<Imovel[]> {
   if (!supabase) return DEMO;
-  const { data, error } = await supabase.from("imovel_caixa").select("*").order("preco_minimo").limit(500);
+  // Aumentado o limite para 1000 para abranger todos os imóveis extraídos
+  const { data, error } = await supabase.from("imovel_caixa").select("*").order("preco_minimo").limit(1000);
   if (error) throw new Error(error.message);
   return (data ?? []).map((d) => ({ ...d, preco_minimo: Number(d.preco_minimo) }));
 }
