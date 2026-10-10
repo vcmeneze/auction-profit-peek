@@ -25,9 +25,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install pandas supabase requests python-dotenv urllib3
 
+    - name: Instalar as bibliotecas necessárias
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas supabase requests python-dotenv urllib3 scikit-learn matplotlib
+
     - name: Executar o Motor de Extração (Scraper)
       env:
         # Puxa as variáveis secretas cadastradas no GitHub
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        
       run: python coletor_caixa.py
