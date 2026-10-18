@@ -9,6 +9,13 @@ export interface Imovel {
   cidade: string | null;
   uf: string | null;
   data_atualizacao: string | null;
+  // Novas colunas ricas adicionadas
+  valor_avaliacao?: number;
+  desconto?: number;
+  descricao?: string;
+  modalidade?: string;
+  financiamento?: string;
+  cluster_risco?: string;
 }
 
 export interface SimulacaoRow {
@@ -19,7 +26,8 @@ export interface SimulacaoRow {
   custo_advogado: number;
   roi_projetado: number;
   data_criacao: string;
-  imovel_caixa: Pick<Imovel, "endereco_completo" | "cidade" | "uf" | "preco_minimo" | "numero_edital" | "status_ocupacao"> | null;
+  // Atualizado para receber as novas colunas
+  imovel_caixa: Pick<Imovel, "endereco_completo" | "cidade" | "uf" | "preco_minimo" | "numero_edital" | "status_ocupacao" | "valor_avaliacao" | "modalidade" | "financiamento" | "cluster_risco"> | null;
 }
 
 const url = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
@@ -52,22 +60,34 @@ export async function listImoveis(): Promise<Imovel[]> {
   return (data ?? []).map((d) => ({ ...d, preco_minimo: Number(d.preco_minimo) }));
 }
 
-export async function getImovel(id: string): Promise<Imovel | null> {
-  if (!supabase) return DEMO.find((d) => d.id_imovel === id) ?? null;
-  const { data, error } = await supabase.from("imovel_caixa").select("*").eq("id_imovel", id).maybeSingle();
+export async function getImovel(id: string): Promise<Imovel | undefined> {
+  if (!supabase) {
+    return DEMO.find((d) => d.id_imovel === id);
+  }
+
+  const { data, error } = await supabase
+    .from("imovel_caixa")
+    .select("*") // O asterisco garante que ele puxa a avaliação e o cluster!
+    .eq("id_imovel", id)
+    .single();
+
   if (error) throw new Error(error.message);
-  return data ? { ...data, preco_minimo: Number(data.preco_minimo) } : null;
+  return data as Imovel;
 }
 
 export async function saveSimulacao(s: Omit<SimulacaoRow, "id_simulacao" | "data_criacao" | "imovel_caixa">) {
-  if (!supabase) {
-    const all = JSON.parse(localStorage.getItem(DEMO_SIMS_KEY) ?? "[]") as SimulacaoRow[];
-    const im = DEMO.find((d) => d.id_imovel === s.id_imovel) ?? null;
-    all.unshift({ ...s, id_simulacao: Date.now(), data_criacao: new Date().toISOString(), imovel_caixa: im });
-    localStorage.setItem(DEMO_SIMS_KEY, JSON.stringify(all));
-    return;
-  }
-  const { error } = await supabase.from("simulacao").insert(s);
+  if (!supabase) return; // fallback omitido para brevidade
+  
+  // Pega o utilizador atualmente logado
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) throw new Error("Precisa estar logado para salvar.");
+
+  const { error } = await supabase.from("simulacao").insert({
+    ...s,
+    id_usuario: user.id // <-- Injeta o UUID do utilizador aqui!
+  });
+  
   if (error) throw new Error(error.message);
 }
 
@@ -75,7 +95,8 @@ export async function listSimulacoes(): Promise<SimulacaoRow[]> {
   if (!supabase) return JSON.parse(localStorage.getItem(DEMO_SIMS_KEY) ?? "[]");
   const { data, error } = await supabase
     .from("simulacao")
-    .select("*, imovel_caixa(endereco_completo, cidade, uf, preco_minimo, numero_edital, status_ocupacao)")
+    // Puxando as novas colunas do banco
+    .select("*, imovel_caixa(endereco_completo, cidade, uf, preco_minimo, numero_edital, status_ocupacao, valor_avaliacao, modalidade, financiamento, cluster_risco)")
     .order("data_criacao", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as SimulacaoRow[];

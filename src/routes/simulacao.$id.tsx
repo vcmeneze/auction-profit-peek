@@ -16,14 +16,6 @@ import { brl, defaultScenario, pct, simulate, smartReform, VERDICT_LABEL } from 
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/simulacao/$id")({
-  head: () => ({
-    meta: [
-      { title: "Simulação do imóvel — LeilãoSeguro" },
-      { name: "description", content: "Teste cenários de desocupação, reforma e honorários e veja o ROI." },
-      { property: "og:title", content: "Simulação do imóvel — LeilãoSeguro" },
-      { property: "og:description", content: "Teste cenários de desocupação, reforma e honorários e veja o ROI." },
-    ],
-  }),
   component: Simulacao,
 });
 
@@ -37,7 +29,7 @@ function MoneyField({ label, value, onChange, max, step, hint }: { label: string
           <Input type="number" min={0} className="pl-9 text-right" value={value} onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))} />
         </div>
       </div>
-      <Slider value={[Math.min(value, max)]} max={max} step={step} onValueChange={([v]) => onChange(v)} aria-label={label} />
+      <Slider value={[Math.min(value, max)]} max={max} step={step} onValueChange={([v]) => onChange(v ?? value)} aria-label={label} />
       {hint}
     </div>
   );
@@ -53,7 +45,7 @@ function Simulacao() {
 
   useEffect(() => {
     if (!im) return;
-    const d = defaultScenario(im.preco_minimo, im.status_ocupacao);
+    const d = defaultScenario(im.preco_minimo ?? 0, im.status_ocupacao ?? "");
     setMeses(d.meses); setReforma(d.reforma); setHonorarios(d.honorarios);
   }, [im]);
 
@@ -67,7 +59,11 @@ function Simulacao() {
   if (isLoading) return <Skeleton className="h-[600px] rounded-xl" />;
   if (!im) return <p>Imóvel não encontrado. <Link to="/" className="underline">Voltar</Link></p>;
 
-  const r = simulate({ preco: im.preco_minimo, meses, reforma, honorarios });
+  // Variável segura para evitar undefined no JSX e na matemática
+  const p = im.preco_minimo ?? 0;
+
+  // Injeta o valor real da avaliação da Caixa no cálculo matemático
+  const r = simulate({ preco: p, valorAvaliacao: im.valor_avaliacao ?? undefined, meses, reforma, honorarios });
   const economia = r.mercado - r.custoTotal;
   const chart = [
     { name: "Custo Total Projetado", valor: Math.round(r.custoTotal) },
@@ -81,7 +77,17 @@ function Simulacao() {
       </Link>
       <header className="mb-6">
         <h1 className="font-display text-3xl font-bold">Simulação de Cenários</h1>
-        <p className="text-muted-foreground">{im.endereco_completo} — {im.cidade}/{im.uf} • Lance inicial <strong className="text-foreground">{brl(im.preco_minimo)}</strong></p>
+        <p className="text-muted-foreground mt-1 text-lg">{im.endereco_completo} — {im.cidade}/{im.uf}</p>
+        {im.descricao && (
+           <div className="mt-3 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground border border-border/50">
+             <Lightbulb className="inline-block w-4 h-4 mr-2 text-gold" />
+             <strong>Detalhes da Caixa:</strong> {im.descricao}
+           </div>
+        )}
+        <div className="mt-4 flex gap-4 items-center">
+          <p className="text-muted-foreground">Lance inicial <strong className="text-foreground text-xl">{brl(p)}</strong></p>
+          {im.valor_avaliacao && <p className="text-muted-foreground border-l pl-4">Avaliação Oficial: <strong className="text-foreground">{brl(im.valor_avaliacao)}</strong></p>}
+        </div>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -90,7 +96,7 @@ function Simulacao() {
           <CardContent className="space-y-8">
             <div className="space-y-3">
               <div className="flex justify-between"><Label>Tempo para Desocupação</Label><span className="font-semibold">{meses} meses</span></div>
-              <Slider value={[meses]} min={3} max={24} step={1} onValueChange={([v]) => setMeses(v)} aria-label="Tempo para desocupação" />
+              <Slider value={[meses]} min={3} max={24} step={1} onValueChange={([v]) => setMeses(v ?? meses)} aria-label="Tempo para desocupação" />
               <div className="flex justify-between text-xs text-muted-foreground"><span>3 meses</span><span>24 meses</span></div>
               <p className="text-xs text-muted-foreground">Condomínio e IPTU acumulados nesse período: <strong>{brl(r.carregamento)}</strong></p>
             </div>
@@ -98,14 +104,14 @@ function Simulacao() {
               label="Custo de Reforma"
               value={reforma}
               onChange={setReforma}
-              max={Math.max(im.preco_minimo * 0.5, reforma)}
+              max={Math.max(p * 0.5, reforma)}
               step={500}
               hint={
                 <div className="flex gap-2 rounded-md bg-muted p-3 text-xs text-muted-foreground">
                   <Lightbulb className="h-4 w-4 shrink-0 text-gold" />
                   <span>
-                    <strong>Smart Default:</strong> sugerimos {brl(smartReform(im.preco_minimo))} (10% do lance) como reforma preventiva — imóveis de leilão costumam precisar de pintura, elétrica e hidráulica.{" "}
-                    <button className="font-medium text-primary underline" onClick={() => setReforma(smartReform(im.preco_minimo))}>Usar sugestão</button>
+                    <strong>Smart Default:</strong> sugerimos {brl(smartReform(p))} (10% do lance) como reforma preventiva.{" "}
+                    <button className="font-medium text-primary underline" onClick={() => setReforma(smartReform(p))}>Usar sugestão</button>
                   </span>
                 </div>
               }

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { FileDown, Search } from "lucide-react";
@@ -8,17 +8,31 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { VerdictBadge } from "@/components/verdict-badge";
 import { DemoBanner } from "@/components/demo-banner";
-import { listSimulacoes } from "@/lib/data";
+import { listSimulacoes, supabase } from "@/lib/data";
 import { exportLaudo } from "@/lib/laudo";
 import { pct, simulate } from "@/lib/calc";
 
 export const Route = createFileRoute("/relatorios")({
+  beforeLoad: async ({ location }) => {
+    if (!supabase) return;
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      // O 'as any' no final do objeto cala definitivamente o TypeScript
+      // até que a árvore de rotas seja gerada pelo vite.
+      throw redirect({
+        to: '/login',
+        search: {
+          redirect: location.href,
+        },
+      } as any);
+    }
+  },
   head: () => ({
     meta: [
       { title: "Relatórios e Laudos — LeilãoSeguro" },
       { name: "description", content: "Histórico de simulações e exportação de laudos de viabilidade em PDF." },
-      { property: "og:title", content: "Relatórios e Laudos — LeilãoSeguro" },
-      { property: "og:description", content: "Histórico de simulações e exportação de laudos de viabilidade em PDF." },
     ],
   }),
   component: Relatorios,
@@ -27,6 +41,7 @@ export const Route = createFileRoute("/relatorios")({
 function Relatorios() {
   const { data = [], isLoading, error } = useQuery({ queryKey: ["simulacoes"], queryFn: listSimulacoes });
   const [q, setQ] = useState("");
+  
   const rows = data.filter((s) =>
     `${s.id_imovel} ${s.imovel_caixa?.numero_edital ?? ""} ${s.imovel_caixa?.endereco_completo ?? ""}`.toLowerCase().includes(q.toLowerCase()),
   );
@@ -56,7 +71,13 @@ function Relatorios() {
             </TableHeader>
             <TableBody>
               {rows.map((s) => {
-                const r = simulate({ preco: Number(s.imovel_caixa?.preco_minimo ?? 0), meses: s.tempo_desocupacao, reforma: Number(s.custo_reforma), honorarios: Number(s.custo_advogado) });
+                const r = simulate({ 
+                  preco: Number(s.imovel_caixa?.preco_minimo ?? 0), 
+                  valorAvaliacao: Number(s.imovel_caixa?.valor_avaliacao ?? 0),
+                  meses: s.tempo_desocupacao, 
+                  reforma: Number(s.custo_reforma), 
+                  honorarios: Number(s.custo_advogado) 
+                });
                 return (
                   <TableRow key={s.id_simulacao}>
                     <TableCell className="whitespace-nowrap">{new Date(s.data_criacao).toLocaleDateString("pt-BR")}</TableCell>
