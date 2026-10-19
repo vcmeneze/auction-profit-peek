@@ -1,11 +1,13 @@
 export const AUCTIONEER_FEE_RATE = 0.05; // 5% do leiloeiro
 export const TAXES_RATE = 0.04; // 4% de ITBI/Registro
+export const MONTHLY_CARRY_COST = 800; // Mantido por retrocompatibilidade caso algum ficheiro importe
 
 export type Verdict = "excelente" | "moderado" | "inviavel";
 
 export interface SimInput {
   preco: number;
-  valorAvaliacao?: number | undefined;
+  valorAvaliacao?: number | null | undefined;
+  descricao?: string | null | undefined;
   meses: number;
   reforma: number;
   honorarios: number;
@@ -19,19 +21,15 @@ export function isOccupied(status?: string | null) {
 export function smartReform(preco: number) {
   return Math.round(preco * 0.10); // 10% de contingência estrutural
 }
-export function simulate(input: {
-  preco: number;
-  valorAvaliacao?: number;
-  descricao?: string; // <-- Novo parâmetro opcional
-  meses: number;
-  reforma: number;
-  honorarios: number;
-}) {
-  const avaliacao = input.valorAvaliacao && input.valorAvaliacao > 0 ? input.valorAvaliacao : input.preco / 0.65;
+
+export function simulate(input: SimInput) {
+  const avaliacao = input.valorAvaliacao && input.valorAvaliacao > 0 
+    ? input.valorAvaliacao 
+    : input.preco / 0.65;
   
   // Verifica pela descrição da Caixa se é Casa ou Terreno
-  const desc = (input.descricao || "").toLowerCase();
-  const isSemCondominio = desc.startsWith("casa") || desc.startsWith("terreno") || desc.startsWith("gleba");
+  const desc = (input.descricao ?? "").toLowerCase();
+  const isSemCondominio = desc.includes("casa") || desc.includes("terreno") || desc.includes("gleba");
 
   // Coeficiente Beta1 dinâmico: 0.15% para casas/terrenos (só IPTU/manutenção) vs 0.5% para apartamentos
   const taxaMensal = isSemCondominio ? 0.0015 : 0.005;
@@ -40,20 +38,24 @@ export function simulate(input: {
   const custoMensalEstimado = Math.max(120, Math.round(avaliacao * taxaMensal));
   const carregamento = input.meses * custoMensalEstimado;
 
-  const custoTotal = input.preco * (1 + AUCTIONEER_FEE_RATE + TAXES_RATE)
-    + input.reforma
-    + input.honorarios
-    + carregamento;
+  const comissao = input.preco * AUCTIONEER_FEE_RATE;
+  const impostos = input.preco * TAXES_RATE;
+
+  const custoTotal = input.preco + comissao + impostos + input.reforma + input.honorarios + carregamento;
   const lucro = avaliacao - custoTotal;
   const margem = avaliacao > 0 ? (lucro / avaliacao) * 100 : 0;
+  const roi = custoTotal > 0 ? (lucro / custoTotal) * 100 : 0; // <-- A propriedade que faltava e quebrava o Radar!
 
   return {
     avaliacao,
+    comissao,
+    impostos,
     custoMensalEstimado,
     carregamento,
     custoTotal,
     lucro,
     margem,
+    roi,
     verdict: verdictFor(margem),
   };
 }
@@ -80,5 +82,5 @@ export const VERDICT_LABEL: Record<Verdict, string> = {
   inviavel: "Inviável / Perigoso",
 };
 
-export const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-export const pct = (n: number) => `${n.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+export const brl = (n: number) => (n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+export const pct = (n: number) => `${(n ?? 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
