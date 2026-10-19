@@ -40,7 +40,23 @@ export function simulate(input: {
   const custoMensalEstimado = Math.max(120, Math.round(avaliacao * taxaMensal));
   const carregamento = input.meses * custoMensalEstimado;
 
-  
+  const custoTotal = input.preco * (1 + AUCTIONEER_FEE_RATE + TAXES_RATE)
+    + input.reforma
+    + input.honorarios
+    + carregamento;
+  const lucro = avaliacao - custoTotal;
+  const margem = avaliacao > 0 ? (lucro / avaliacao) * 100 : 0;
+
+  return {
+    avaliacao,
+    custoMensalEstimado,
+    carregamento,
+    custoTotal,
+    lucro,
+    margem,
+    verdict: verdictFor(margem),
+  };
+}
 
 export function verdictFor(margem: number): Verdict {
   if (margem >= 35) return "excelente";
