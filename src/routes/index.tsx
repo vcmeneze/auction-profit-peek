@@ -51,7 +51,8 @@ function Dashboard() {
     return data.map(im => {
       const p = im.preco_minimo ?? 0;
       const cenario = defaultScenario(p, im.status_ocupacao);
-      const r = simulate({ preco: p, valorAvaliacao: im.valor_avaliacao, meses: cenario.meses, reforma: cenario.reforma, honorarios: cenario.honorarios });
+      const r = simulate({ preco: p, valorAvaliacao: im.valor_avaliacao, descricao: im.descricao, meses: cenario.meses, reforma: cenario.reforma, honorarios: cenario.honorarios });
+
       return { ...im, preco_minimo: p, simulacao: r };
     });
   }, [data]);

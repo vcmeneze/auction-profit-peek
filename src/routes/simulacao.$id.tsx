@@ -62,8 +62,16 @@ function Simulacao() {
   // Variável segura para evitar undefined no JSX e na matemática
   const p = im.preco_minimo ?? 0;
 
-  // Injeta o valor real da avaliação da Caixa no cálculo matemático
-  const r = simulate({ preco: p, valorAvaliacao: im.valor_avaliacao ?? undefined, meses, reforma, honorarios });
+  // Usa os estados interativos (meses, reforma, honorarios) e passa a descrição para diferenciar Casa de Apartamento
+  const r = simulate({ 
+    preco: p, 
+    valorAvaliacao: im.valor_avaliacao, 
+    descricao: im.descricao, 
+    meses, 
+    reforma, 
+    honorarios 
+  });
+  
   const economia = r.mercado - r.custoTotal;
   const chart = [
     { name: "Custo Total Projetado", valor: Math.round(r.custoTotal) },
@@ -98,7 +106,9 @@ function Simulacao() {
               <div className="flex justify-between"><Label>Tempo para Desocupação</Label><span className="font-semibold">{meses} meses</span></div>
               <Slider value={[meses]} min={3} max={24} step={1} onValueChange={([v]) => setMeses(v ?? meses)} aria-label="Tempo para desocupação" />
               <div className="flex justify-between text-xs text-muted-foreground"><span>3 meses</span><span>24 meses</span></div>
-              <p className="text-xs text-muted-foreground">Condomínio e IPTU acumulados nesse período: <strong>{brl(r.carregamento)}</strong></p>
+              <p className="text-xs text-muted-foreground">
+                Custos mensais (IPTU/Condomínio est. em {brl(r.custoMensalEstimado)}/mês): <strong>{brl(r.carregamento)}</strong>
+              </p>
             </div>
             <MoneyField
               label="Custo de Reforma"
@@ -154,7 +164,7 @@ function Simulacao() {
                 : "Atenção: os custos ocultos anularam o desconto do leilão."}
             </p>
           </div>
-          <p className="text-xs text-muted-foreground">Preço de mercado estimado em {brl(r.mercado)}. Inclui ITBI e registro ({brl(r.taxas)}).</p>
+          <p className="text-xs text-muted-foreground">Preço de mercado estimado em {brl(r.mercado)}. Inclui leiloeiro, ITBI e registro ({brl(r.taxas)}).</p>
         </div>
       </div>
     </div>

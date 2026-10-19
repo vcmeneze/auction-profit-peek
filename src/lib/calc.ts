@@ -1,6 +1,6 @@
 export const AUCTIONEER_FEE_RATE = 0.05; // 5% do leiloeiro
 export const TAXES_RATE = 0.04; // 4% de ITBI/Registro
-export const MONTHLY_CARRY_COST = 800; // Mantido por retrocompatibilidade caso algum ficheiro importe
+export const MONTHLY_CARRY_COST = 800; // Mantido por retrocompatibilidade
 
 export type Verdict = "excelente" | "moderado" | "inviavel";
 
@@ -23,9 +23,9 @@ export function smartReform(preco: number) {
 }
 
 export function simulate(input: SimInput) {
-  const avaliacao = input.valorAvaliacao && input.valorAvaliacao > 0 
+  const mercado = input.valorAvaliacao && input.valorAvaliacao > 0 
     ? input.valorAvaliacao 
-    : input.preco / 0.65;
+    : Math.round(input.preco / 0.65);
   
   // Verifica pela descrição da Caixa se é Casa ou Terreno
   const desc = (input.descricao ?? "").toLowerCase();
@@ -35,21 +35,24 @@ export function simulate(input: SimInput) {
   const taxaMensal = isSemCondominio ? 0.0015 : 0.005;
   
   // Define um piso mínimo de R$ 120/mês e calcula o carregamento proporcional
-  const custoMensalEstimado = Math.max(120, Math.round(avaliacao * taxaMensal));
+  const custoMensalEstimado = Math.max(120, Math.round(mercado * taxaMensal));
   const carregamento = input.meses * custoMensalEstimado;
 
   const comissao = input.preco * AUCTIONEER_FEE_RATE;
   const impostos = input.preco * TAXES_RATE;
+  const taxas = Math.round(comissao + impostos);
 
-  const custoTotal = input.preco + comissao + impostos + input.reforma + input.honorarios + carregamento;
-  const lucro = avaliacao - custoTotal;
-  const margem = avaliacao > 0 ? (lucro / avaliacao) * 100 : 0;
-  const roi = custoTotal > 0 ? (lucro / custoTotal) * 100 : 0; // <-- A propriedade que faltava e quebrava o Radar!
+  const custoTotal = input.preco + taxas + input.reforma + input.honorarios + carregamento;
+  const lucro = mercado - custoTotal;
+  const margem = mercado > 0 ? (lucro / mercado) * 100 : 0;
+  const roi = custoTotal > 0 ? (lucro / custoTotal) * 100 : 0;
 
   return {
-    avaliacao,
+    avaliacao: mercado,
+    mercado,
     comissao,
     impostos,
+    taxas,
     custoMensalEstimado,
     carregamento,
     custoTotal,
