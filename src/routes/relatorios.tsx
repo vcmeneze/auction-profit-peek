@@ -76,7 +76,8 @@ function Relatorios() {
                   valorAvaliacao: Number(s.imovel_caixa?.valor_avaliacao ?? 0),
                   meses: s.tempo_desocupacao, 
                   reforma: Number(s.custo_reforma), 
-                  honorarios: Number(s.custo_advogado) 
+                  honorarios: Number(s.custo_advogado), 
+                  descricao: s.imovel_caixa?.descricao,
                 });
                 return (
                   <TableRow key={s.id_simulacao}>

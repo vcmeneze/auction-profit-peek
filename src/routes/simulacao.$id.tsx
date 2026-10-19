@@ -107,6 +107,9 @@ function Simulacao() {
               <Slider value={[meses]} min={3} max={24} step={1} onValueChange={([v]) => setMeses(v ?? meses)} aria-label="Tempo para desocupação" />
               <div className="flex justify-between text-xs text-muted-foreground"><span>3 meses</span><span>24 meses</span></div>
               <p className="text-xs text-muted-foreground">
+                {r.temCondominio ? "Condomínio e IPTU" : "IPTU e manutenção (sem condomínio)"} est. em {brl(r.custoMensalEstimado)}/mês: <strong>{brl(r.carregamento)}</strong>
+              </p>
+              <p className="text-xs text-muted-foreground">
                 Custos mensais (IPTU/Condomínio est. em {brl(r.custoMensalEstimado)}/mês): <strong>{brl(r.carregamento)}</strong>
               </p>
             </div>

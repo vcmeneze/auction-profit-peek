@@ -27,12 +27,18 @@ export function simulate(input: SimInput) {
     ? input.valorAvaliacao 
     : Math.round(input.preco / 0.65);
   
-  // Verifica pela descrição da Caixa se é Casa ou Terreno
+  // Lógica invertida: busca ativa por indicadores de Apartamento / Condomínio
   const desc = (input.descricao ?? "").toLowerCase();
-  const isSemCondominio = desc.includes("casa") || desc.includes("terreno") || desc.includes("gleba");
+  const temCondominio = 
+    desc.includes("apto") || 
+    desc.includes("apartamento") || 
+    desc.includes("cond.") || 
+    desc.includes("condomínio") || 
+    desc.includes("condominio") ||
+    desc.includes("bloco");
 
-  // Coeficiente Beta1 dinâmico: 0.15% para casas/terrenos (só IPTU/manutenção) vs 0.5% para apartamentos
-  const taxaMensal = isSemCondominio ? 0.0015 : 0.005;
+  // Coeficiente Beta1 dinâmico: 0.5% se tiver condomínio (Apto) vs 0.15% padrão (Casas/Terrenos/Comercial)
+  const taxaMensal = temCondominio ? 0.005 : 0.0015;
   
   // Define um piso mínimo de R$ 120/mês e calcula o carregamento proporcional
   const custoMensalEstimado = Math.max(120, Math.round(mercado * taxaMensal));
@@ -53,6 +59,7 @@ export function simulate(input: SimInput) {
     comissao,
     impostos,
     taxas,
+    temCondominio, // <-- Exportamos a flag para deixar a interface ainda mais inteligente
     custoMensalEstimado,
     carregamento,
     custoTotal,

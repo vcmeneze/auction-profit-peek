@@ -27,7 +27,7 @@ export interface SimulacaoRow {
   roi_projetado: number;
   data_criacao: string;
   // Atualizado para receber as novas colunas
-  imovel_caixa: Pick<Imovel, "endereco_completo" | "cidade" | "uf" | "preco_minimo" | "numero_edital" | "status_ocupacao" | "valor_avaliacao" | "modalidade" | "financiamento" | "cluster_risco"> | null;
+  imovel_caixa: Pick<Imovel, "descricao" | "endereco_completo" | "cidade" | "uf" | "preco_minimo" | "numero_edital" | "status_ocupacao" | "valor_avaliacao" | "modalidade" | "financiamento" | "cluster_risco">
 }
 
 const url = import.meta.env['VITE_SUPABASE_URL'] as string | undefined;
@@ -96,7 +96,7 @@ export async function listSimulacoes(): Promise<SimulacaoRow[]> {
   const { data, error } = await supabase
     .from("simulacao")
     // Puxando as novas colunas do banco
-    .select("*, imovel_caixa(endereco_completo, cidade, uf, preco_minimo, numero_edital, status_ocupacao, valor_avaliacao, modalidade, financiamento, cluster_risco)")
+    .select("*, imovel_caixa(descricao, endereco_completo, cidade, uf, preco_minimo, numero_edital, status_ocupacao, valor_avaliacao, modalidade, financiamento, cluster_risco)")
     .order("data_criacao", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as SimulacaoRow[];
