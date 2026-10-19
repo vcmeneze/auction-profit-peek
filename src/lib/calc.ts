@@ -19,21 +19,28 @@ export function isOccupied(status?: string | null) {
 export function smartReform(preco: number) {
   return Math.round(preco * 0.10); // 10% de contingência estrutural
 }
+export function simulate(input: {
+  preco: number;
+  valorAvaliacao?: number;
+  descricao?: string; // <-- Novo parâmetro opcional
+  meses: number;
+  reforma: number;
+  honorarios: number;
+}) {
+  const avaliacao = input.valorAvaliacao && input.valorAvaliacao > 0 ? input.valorAvaliacao : input.preco / 0.65;
+  
+  // Verifica pela descrição da Caixa se é Casa ou Terreno
+  const desc = (input.descricao || "").toLowerCase();
+  const isSemCondominio = desc.startsWith("casa") || desc.startsWith("terreno") || desc.startsWith("gleba");
 
-export function simulate({ preco, valorAvaliacao, meses, reforma, honorarios }: SimInput) {
-  const mercado = valorAvaliacao && valorAvaliacao > preco ? valorAvaliacao : Math.round(preco * 1.5);
+  // Coeficiente Beta1 dinâmico: 0.15% para casas/terrenos (só IPTU/manutenção) vs 0.5% para apartamentos
+  const taxaMensal = isSemCondominio ? 0.0015 : 0.005;
   
-  const leiloeiro = preco * AUCTIONEER_FEE_RATE;
-  const taxas = preco * TAXES_RATE;
-  const carregamento = meses * 800; // R$ 800 fixos mensais previstos
+  // Define um piso mínimo de R$ 120/mês e calcula o carregamento proporcional
+  const custoMensalEstimado = Math.max(120, Math.round(avaliacao * taxaMensal));
+  const carregamento = input.meses * custoMensalEstimado;
+
   
-  const custoTotal = preco + leiloeiro + taxas + carregamento + reforma + honorarios;
-  
-  const margem = ((mercado - custoTotal) / mercado) * 100;
-  const roi = ((mercado - custoTotal) / custoTotal) * 100;
-  
-  return { mercado, taxas: taxas + leiloeiro, carregamento, custoTotal, margem, roi, verdict: verdictFor(margem) };
-}
 
 export function verdictFor(margem: number): Verdict {
   if (margem >= 35) return "excelente";
