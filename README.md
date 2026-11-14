@@ -1,103 +1,41 @@
-# Imóvel Insights
+# LeilãoSeguro - Sistema de Apoio à Decisão (SAD)
 
-já tenho um banco de dados no supabase feito com supabase 
-CREATE TABLE imovel_caixa (
+Este repositório contém o código-fonte e a documentação do **LeilãoSeguro**, um Sistema de Apoio à Decisão desenvolvido como requisito acadêmico. O sistema visa mitigar a assimetria de informação no mercado de leilões de imóveis da Caixa Econômica Federal através de técnicas de mineração de dados e inteligência artificial.
 
-    id_imovel VARCHAR PRIMARY KEY,
+## 🔗 Link Oficial
 
-    numero_edital VARCHAR NOT NULL,
+* **Aplicação em Produção (Live):** <https://vcmeneze-auction-profit-peek.vcm7000.workers.dev/>
 
-    endereco_completo TEXT NOT NULL,
+## 🎯 Objetivo e Metodologia
 
-    preco_minimo NUMERIC NOT NULL,
+O LeilãoSeguro auxilia investidores na avaliação de riscos e projeção de custos ocultos (como tempo de desocupação e taxas acumuladas). Para atender aos requisitos da disciplina, o sistema implementa quatro funções analíticas fundamentais:
 
-    status_ocupacao VARCHAR NOT NULL,
+1. **Sumarização (Pandas):** Geração de estatísticas descritivas do mercado para visão macro durante a higienização dos dados brutos.
 
-    cidade VARCHAR,
+2. **Agrupamento / Clustering (K-Means):** Utilização do algoritmo *K-Means* (Scikit-Learn) para cruzar o Lance Inicial e o Valor de Avaliação, segmentando matematicamente os imóveis em três perfis de risco: Popular, Médio e Alto Padrão.
 
-    uf VARCHAR(2),
+3. **Regressão Linear (Projeção de Custos):** Aplicação de um modelo determinístico ($y = \beta_1 x$) para projetar a corrosão da margem de lucro ao longo dos meses de desocupação judicial. O coeficiente ($\beta_1$) é dinâmico: identifica via texto se o imóvel é um apartamento (\~0,5% a.m. para condomínio e IPTU) ou casa (\~0,15% a.m. apenas para IPTU).
 
-    data_atualizacao TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+4. **Classificação (Regras de Negócio):** Avaliação da Margem de Segurança final do ativo, classificando a oportunidade como "Excelente Negócio" (>35%), "Risco Moderado" (15% a 34%) ou "Inviável" (<15%).
 
-);
+## 🏗️ Arquitetura do Sistema
 
-CREATE TABLE usuario (
-    id_usuario SERIAL PRIMARY KEY,
-    nome VARCHAR NOT NULL,
-    email VARCHAR UNIQUE NOT NULL,
-    tipo_perfil VARCHAR NOT NULL
-);
+O projeto adota uma arquitetura moderna e dividida em:
 
--- 2. Tabela de Simulações
-CREATE TABLE simulacao (
-    id_simulacao SERIAL PRIMARY KEY,
-    id_usuario INTEGER REFERENCES usuario(id_usuario) ON DELETE CASCADE,
-    id_imovel VARCHAR REFERENCES imovel_caixa(id_imovel) ON DELETE CASCADE,
-    tempo_desocupacao INTEGER NOT NULL,
-    custo_reforma NUMERIC NOT NULL,
-    custo_advogado NUMERIC NOT NULL,
-    roi_projetado NUMERIC NOT NULL,
-    data_criacao TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+* **Pipeline de Dados (Backend/ETL):** Script Python 3 (`coletor_caixa.py`) que extrai, limpa, aplica a IA de agrupamento e popula o banco de dados.
 
--- 3. Tabela de Laudos de Viabilidade
-CREATE TABLE laudo_viabilidade (
-    id_laudo SERIAL PRIMARY KEY,
-    id_simulacao INTEGER REFERENCES simulacao(id_simulacao) ON DELETE CASCADE,
-    data_emissao DATE NOT NULL DEFAULT CURRENT_DATE,
-    score_recomendacao VARCHAR NOT NULL,
-    url_pdf TEXT
-);
+* **Motor Analítico e Interface (Frontend):** Construído com React, TypeScript e Vite, utilizando Tailwind CSS para estilização e Recharts para visualização de dados.
 
-tambem ja tenho um script de Web Scraping e carga em Python rodando em um ambiente virtual para baixar a planilha pública, tratar as colunas e disparar os registros para o Supabase.
+* **Banco de Dados e Autenticação:** Supabase (PostgreSQL + RLS).
 
-Agora preciso de ajuda para desenvolver o frontend da aplicação e integrar ao meu banco de dados do supabase
+* **Hospedagem (Deploy):** Serveless via Cloudflare Workers / Pages (Motor Nitro).
 
-A aplicação deve conter uma barra lateral de navegação e 3 telas principais:
+## 🗺️ Trabalhos Futuros (Roadmap)
 
-DASHBOARD PRINCIPAL (Radar de Oportunidades)
+Como próximos passos para a evolução deste MVP, prevemos:
 
-Barra de filtros no topo: Estado (UF), Cidade, Bairro e Faixa de Preço Máxima.
+* **Automação de ETL via Cron Jobs:** Migrar a execução do `coletor_caixa.py` para um ambiente de integração contínua (ex: GitHub Actions), automatizando a captação de novos editais.
 
-Grelha central com 'Cards de Imóveis'. Cada card exibe: imagem genérica, Endereço, Cidade e Valor do Lance Inicial.
+* **Multilocação (Multi-Tenant) Rigorosa:** Aperfeiçoar as políticas de *Row Level Security* (RLS) no Supabase para garantir isolamento total de simulações entre diferentes usuários (funcionalidade base para um futuro modelo de monetização SaaS).
 
-No topo de cada Card, um Badge de risco: Verde ('Excelente Negócio'), Amarelo ('Risco Moderado') ou Vermelho ('Inviável').
-
-Clicar no card redireciona para a Simulação.
-
-MÓDULO DE SIMULAÇÃO (Cenários 'What-If')
-
-Tela dividida em duas colunas.
-
-Coluna Esquerda: Sliders para 'Tempo para Desocupação' (3 a 24 meses), 'Custo de Reforma (R$)' (com input numérico) e 'Honorários (R$)'. Inclua um texto menor explicando o 'Smart Default' de reforma preventiva.
-
-Coluna Direita: Gráfico de barras dinâmico (Recharts) comparando 'Custo Total Projetado' com 'Preço de Mercado'. Abaixo, KPIs grandes para 'Margem de Segurança (%)' e 'ROI Projetado (%)', além de um card colorido com o 'Veredicto do Sistema'.
-
-TELA DE RELATÓRIOS
-
-Tabela (Data Table) com histórico de simulações. Colunas: Data, Endereço, ROI e Status.
-
-Botão de ação 'Exportar Laudo' (ícone de PDF) na última coluna.
-
-Utilize componentes Shadcn UI e garanta usabilidade impecável para usuários sem conhecimento técnico.
-
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/efef62d5-3809-4f98-9c08-ec891e333ec3).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
+* **Implementação de Método SAW (MCDM):** Integração do método *Simple Additive Weighting* para gerar um ranking global das melhores oportunidades do mês, ponderando margem de lucro, liquidez e risco de ocupação.
