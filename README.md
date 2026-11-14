@@ -2,9 +2,12 @@
 
 Este repositório contém o código-fonte e a documentação do **LeilãoSeguro**, um Sistema de Apoio à Decisão desenvolvido como requisito acadêmico. O sistema visa mitigar a assimetria de informação no mercado de leilões de imóveis da Caixa Econômica Federal através de técnicas de mineração de dados e inteligência artificial.
 
-## 🔗 Link Oficial
+## 🔗 Link Oficial e Credenciais para teste
 
 * **Aplicação em Produção (Live):** <https://vcmeneze-auction-profit-peek.vcm7000.workers.dev/>
+
+* **Usuário:**  usuario@teste.com
+* **Senha:** teste@123
 
 ## 🎯 Objetivo e Metodologia
 
